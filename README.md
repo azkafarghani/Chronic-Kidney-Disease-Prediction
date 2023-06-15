@@ -110,5 +110,5 @@ for i in range(3):
     graph = graphviz.Source(dot_data)
     display(graph)
 ```
-![Tree]
+![Tree](https://github.com/azkafarghani/Chronic-Kidney-Disease-Prediction/blob/main/Tree.png)
 Berdasarkan Tree tersebut dapat diketahui simpul dan kondisi pemisahan yang menunjukkan bagaimana pohon keputusan memisahkan data berdasarkan fitur-fitur tertentu dan distribusi kelas pada setiap simpul tersebut.
