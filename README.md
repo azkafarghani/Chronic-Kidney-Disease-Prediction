@@ -33,3 +33,82 @@ df[['pcc','ba']] = df[['pcc','ba']].replace(to_replace={'present':1,'notpresent'
 df[['appet']] = df[['appet']].replace(to_replace={'good':1,'poor':0,'no':np.nan})
 #df['classification'] = df['classification'].replace(to_replace={'ckd':1.0,'ckd\t':1.0,'notckd':0.0,'no':0.0})
 ```
+
+Selanjutnya dilakukan replace Missing value
+
+Sebelum itu, nilai kosong pada data akan diganti dengan NA terlebih dahulu
+
+```
+data <- data %>% 
+  mutate(across(where(is.character), na_if, "")) 
+```
+Selanjutnya nilai NA akan diisi oleh nilai yang diinginkan, di sini, nilai nominal akan diisi oleh modus yang ada pada row, sedangkan nilai numerik akan diisi oleh nilai mean pada row tersebut.
+```
+custom_impute <- function(x) {
+  if (any(is.na(x))) {
+    mode_value <- names(sort(-table(x)))[1]
+    x[is.na(x)] <- mode_value
+  }
+  return(x)
+}
+
+# mengisi nilai kosong pada atribut nominal
+
+data <- data %>% 
+  mutate(across(where(is.character), ~custom_impute(.)))
+
+
+# mengisi missing value atribut numerik
+
+data <- data %>%
+  mutate(across(where(is.numeric), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+```
+
+# Korelasi antar dataset
+
+Selanjutnya, dilakukan pencarian korelasi antar dataset menggunakan heatmap
+```
+# Korelasi antar dataset
+h_labels = [x.replace('_', ' ').title() 
+
+for x in list(df.select_dtypes(include=['number', 'bool']).columns.values)]
+
+fig, ax = plt.subplots(figsize=(20,6))
+_ = sns.heatmap(
+df.corr(), 
+annot=True, 
+xticklabels=h_labels, 
+yticklabels=h_labels, 
+cmap=sns.cubehelix_palette(as_cmap=True), ax=ax)
+
+```
+
+# Modelling data
+Pertama, dilakukan pembagian data train dan data test
+```
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+rf_model = RandomForestClassifier(n_estimators=50, max_features="auto", random_state=42)
+rf_model.fit(X_train, y_train)  
+```
+Terdapat 240 record dari 24 atribut digunakan sebagai data training dan 160 record dari 24 atribut digunakan sebagai testing.
+
+Selanjutnya, dilakukan prediksi dari X apakah ckd atau notckd
+```
+pred = rf_model.predict(X_test)
+pred
+```
+Kemudian, dilakukan visualisasi dari model yang sudah ditrain menggunakan single decision tree
+```
+for i in range(3):
+    tree = rf_model.estimators_[i]
+    dot_data = export_graphviz(tree, 
+                               feature_names=X_train.columns,  
+                               filled=True,  
+                               max_depth=2, 
+                               impurity=False, 
+                               proportion=True)
+    graph = graphviz.Source(dot_data)
+    display(graph)
+```
+![Tree]
+Berdasarkan Tree tersebut dapat diketahui simpul dan kondisi pemisahan yang menunjukkan bagaimana pohon keputusan memisahkan data berdasarkan fitur-fitur tertentu dan distribusi kelas pada setiap simpul tersebut.
